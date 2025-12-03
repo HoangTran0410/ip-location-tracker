@@ -1,0 +1,1610 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>IP Location Tracker - 3D Globe</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        color: #fff;
+        overflow: hidden;
+      }
+
+      .container {
+        display: grid;
+        grid-template-columns: 400px 1fr;
+        height: 100vh;
+        gap: 0;
+      }
+
+      .sidebar {
+        background: rgba(0, 0, 0, 0.3);
+        backdrop-filter: blur(10px);
+        padding: 20px;
+        overflow-y: auto;
+        border-right: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .main-content {
+        position: relative;
+        overflow: hidden;
+      }
+
+      h1 {
+        font-size: 1.5rem;
+        margin-bottom: 10px;
+        color: #fff;
+      }
+
+      .description {
+        font-size: 0.9rem;
+        opacity: 0.8;
+        margin-bottom: 20px;
+        line-height: 1.5;
+      }
+
+      .input-group {
+        margin-bottom: 20px;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+        font-size: 0.9rem;
+      }
+
+      textarea {
+        width: 100%;
+        height: 200px;
+        padding: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.1);
+        color: #fff;
+        font-family: "Courier New", monospace;
+        font-size: 0.9rem;
+        resize: vertical;
+      }
+
+      textarea::placeholder {
+        color: rgba(255, 255, 255, 0.5);
+      }
+
+      textarea:focus {
+        outline: none;
+        border-color: rgba(255, 255, 255, 0.4);
+        background: rgba(255, 255, 255, 0.15);
+      }
+
+      button {
+        width: 100%;
+        padding: 12px 20px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        margin-bottom: 10px;
+      }
+
+      button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+      }
+
+      button:active {
+        transform: translateY(0);
+      }
+
+      button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .results {
+        margin-top: 20px;
+      }
+
+      .result-item {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 12px;
+        border-radius: 6px;
+        margin-bottom: 10px;
+        font-size: 0.85rem;
+        border-left: 3px solid #667eea;
+      }
+
+      .result-item .ip {
+        font-weight: 600;
+        color: #ffd700;
+        font-family: "Courier New", monospace;
+      }
+
+      .result-item .location {
+        margin-top: 5px;
+        opacity: 0.9;
+      }
+
+      .result-item .error {
+        color: #ff6b6b;
+      }
+
+      .result-item.hidden {
+        display: none;
+      }
+
+      .result-item:hover {
+        background: rgba(255, 255, 255, 0.15);
+        transform: translateX(3px);
+        transition: all 0.3s;
+        cursor: pointer;
+      }
+
+      .result-item.active {
+        background: rgba(102, 126, 234, 0.3);
+        border-left: 3px solid #ffd700;
+        transform: translateX(3px);
+      }
+
+      .search-filter-section {
+        margin-top: 20px;
+        margin-bottom: 15px;
+      }
+
+      .search-box {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.1);
+        color: #fff;
+        font-size: 0.9rem;
+        margin-bottom: 10px;
+      }
+
+      .search-box::placeholder {
+        color: rgba(255, 255, 255, 0.5);
+      }
+
+      .search-box:focus {
+        outline: none;
+        border-color: rgba(255, 255, 255, 0.4);
+        background: rgba(255, 255, 255, 0.15);
+      }
+
+      .filters-container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-bottom: 10px;
+      }
+
+      .filter-select {
+        width: 100%;
+        padding: 8px 10px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 6px;
+        background: rgba(255, 255, 255, 0.1);
+        color: #fff;
+        font-size: 0.85rem;
+        cursor: pointer;
+      }
+
+      .filter-select:focus {
+        outline: none;
+        border-color: rgba(255, 255, 255, 0.4);
+        background: rgba(255, 255, 255, 0.15);
+      }
+
+      .filter-select option {
+        background: #1e3c72;
+        color: #fff;
+      }
+
+      .filter-actions {
+        display: flex;
+        gap: 5px;
+        margin-bottom: 10px;
+      }
+
+      .filter-btn {
+        flex: 1;
+        padding: 6px 10px;
+        font-size: 0.8rem;
+        margin: 0;
+      }
+
+      .results-header {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        margin-bottom: 10px;
+        font-size: 0.85rem;
+        opacity: 0.8;
+      }
+
+      .stats {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-bottom: 20px;
+      }
+
+      .stat-card {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 15px;
+        border-radius: 8px;
+        text-align: center;
+      }
+
+      .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #ffd700;
+      }
+
+      .stat-label {
+        font-size: 0.8rem;
+        opacity: 0.8;
+        margin-top: 5px;
+      }
+
+      #globe {
+        width: 100%;
+        height: 100%;
+      }
+
+      .loading {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+        z-index: 10;
+      }
+
+      .spinner {
+        border: 4px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        border-top: 4px solid #fff;
+        width: 50px;
+        height: 50px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 15px;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      .hidden {
+        display: none;
+      }
+
+      .controls {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        z-index: 100;
+        background: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(10px);
+        padding: 5px;
+        border-radius: 8px;
+      }
+
+      .control-btn {
+        width: 40px;
+        height: 40px;
+        margin: 5px;
+        padding: 0;
+        font-size: 1.2rem;
+      }
+
+      .legend {
+        position: absolute;
+        bottom: 20px;
+        left: 20px;
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(10px);
+        padding: 15px;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        z-index: 100;
+      }
+
+      .legend-item {
+        display: flex;
+        align-items: center;
+        margin: 5px 0;
+      }
+
+      .legend-color {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        margin-right: 10px;
+      }
+
+      .error-message {
+        background: rgba(255, 107, 107, 0.2);
+        border: 1px solid #ff6b6b;
+        padding: 10px;
+        border-radius: 6px;
+        margin-bottom: 15px;
+        font-size: 0.9rem;
+      }
+
+      /* Mobile Menu Toggle */
+      .mobile-menu-toggle {
+        display: none;
+        position: fixed;
+        top: 20px;
+        left: 20px;
+        z-index: 1000;
+        background: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(10px);
+        border: none;
+        border-radius: 8px;
+        width: 50px;
+        height: 50px;
+        font-size: 1.5rem;
+        color: white;
+        cursor: pointer;
+        transition: all 0.3s;
+      }
+
+      .mobile-menu-toggle:hover {
+        background: rgba(0, 0, 0, 0.9);
+        transform: scale(1.05);
+      }
+
+      /* Responsive Design */
+      @media (max-width: 1024px) {
+        .container {
+          grid-template-columns: 300px 1fr;
+        }
+
+        .sidebar {
+          padding: 15px;
+        }
+
+        h1 {
+          font-size: 1.3rem;
+        }
+
+        textarea {
+          height: 150px;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .mobile-menu-toggle {
+          display: block;
+        }
+
+        .container {
+          grid-template-columns: 1fr;
+        }
+
+        .sidebar {
+          position: fixed;
+          top: 0;
+          left: -100%;
+          width: 85%;
+          max-width: 350px;
+          height: 100vh;
+          z-index: 999;
+          transition: left 0.3s ease;
+          box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
+          margin-top: 50px;
+        }
+
+        .sidebar.open {
+          left: 0;
+        }
+
+        .main-content {
+          width: 100%;
+        }
+
+        .controls {
+          top: 10px;
+          right: 10px;
+          padding: 10px;
+        }
+
+        .control-btn {
+          width: 35px;
+          height: 35px;
+          font-size: 1rem;
+          margin: 3px;
+        }
+
+        .legend {
+          bottom: 10px;
+          left: 10px;
+          padding: 10px;
+          font-size: 0.75rem;
+        }
+
+        .legend-color {
+          width: 15px;
+          height: 15px;
+        }
+
+        .stat-card {
+          padding: 10px;
+        }
+
+        .stat-value {
+          font-size: 1.5rem;
+        }
+
+        .stat-label {
+          font-size: 0.7rem;
+        }
+
+        textarea {
+          height: 120px;
+          font-size: 0.85rem;
+        }
+
+        button {
+          padding: 10px 15px;
+          font-size: 0.9rem;
+        }
+
+        .result-item {
+          font-size: 0.8rem;
+          padding: 10px;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .mobile-menu-toggle {
+          width: 45px;
+          height: 45px;
+          font-size: 1.3rem;
+          top: 5px;
+          left: 5px;
+        }
+
+        .sidebar {
+          width: 100%;
+          padding: 12px;
+        }
+
+        h1 {
+          font-size: 1.1rem;
+        }
+
+        .description {
+          font-size: 0.8rem;
+        }
+
+        .stats {
+          gap: 8px;
+        }
+
+        .stat-card {
+          padding: 8px;
+        }
+
+        .stat-value {
+          font-size: 1.3rem;
+        }
+
+        .controls {
+          top: 5px;
+          right: 5px;
+          padding: 8px;
+        }
+
+        .control-btn {
+          width: 32px;
+          height: 32px;
+          font-size: 0.9rem;
+          margin: 2px;
+        }
+
+        .legend {
+          bottom: 5px;
+          left: 5px;
+          padding: 8px;
+          font-size: 0.7rem;
+          max-width: calc(100vw - 20px);
+        }
+
+        textarea {
+          height: 100px;
+        }
+      }
+
+      /* Overlay for mobile menu */
+      .sidebar-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 998;
+      }
+
+      .sidebar-overlay.open {
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Mobile Menu Toggle -->
+    <button class="mobile-menu-toggle" onclick="toggleMobileMenu()">☰</button>
+
+    <!-- Sidebar Overlay -->
+    <div class="sidebar-overlay" onclick="toggleMobileMenu()"></div>
+
+    <div class="container">
+      <div class="sidebar" id="sidebar">
+        <h1>🌍 IP Location Tracker</h1>
+        <p class="description">
+          Nhập danh sách địa chỉ IP (mỗi IP một dòng) để xem vị trí của chúng
+          trên bản đồ 3D toàn cầu.
+        </p>
+
+        <div class="stats">
+          <div class="stat-card">
+            <div class="stat-value" id="totalIPs">0</div>
+            <div class="stat-label">Total IPs</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="foundIPs">0</div>
+            <div class="stat-label">Located</div>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label for="ipList">Danh sách địa chỉ IP:</label>
+          <textarea
+            id="ipList"
+            placeholder="8.8.8.8&#10;1.1.1.1&#10;208.67.222.222&#10;142.250.185.46"
+          ></textarea>
+        </div>
+
+        <button id="locateBtn" onclick="locateIPs()">
+          🔍 Locate IPs on Globe
+        </button>
+        <button onclick="clearResults()">🗑️ Clear All</button>
+
+        <div id="errorContainer"></div>
+
+        <!-- Search and Filters -->
+        <div
+          class="search-filter-section"
+          id="searchFilterSection"
+          style="display: none"
+        >
+          <input
+            type="text"
+            class="search-box"
+            id="searchBox"
+            placeholder="🔍 Search by IP, city, country, ISP..."
+            oninput="applyFilters()"
+          />
+
+          <div class="filters-container">
+            <select
+              class="filter-select"
+              id="filterCountry"
+              onchange="applyFilters()"
+            >
+              <option value="">All Countries</option>
+            </select>
+
+            <select
+              class="filter-select"
+              id="filterCity"
+              onchange="applyFilters()"
+            >
+              <option value="">All Cities</option>
+            </select>
+
+            <select
+              class="filter-select"
+              id="filterRegion"
+              onchange="applyFilters()"
+            >
+              <option value="">All Regions</option>
+            </select>
+
+            <select
+              class="filter-select"
+              id="filterISP"
+              onchange="applyFilters()"
+            >
+              <option value="">All ISPs</option>
+            </select>
+
+            <select
+              class="filter-select"
+              id="filterMobile"
+              onchange="applyFilters()"
+            >
+              <option value="">All Connection Types</option>
+              <option value="mobile">Mobile/Cellular</option>
+              <option value="broadband">Broadband/WiFi</option>
+            </select>
+
+            <select
+              class="filter-select"
+              id="filterTimezone"
+              onchange="applyFilters()"
+            >
+              <option value="">All Timezones</option>
+            </select>
+          </div>
+
+          <div class="filter-actions">
+            <button class="filter-btn" onclick="clearFilters()">
+              Clear Filters
+            </button>
+          </div>
+
+          <div class="results-header">
+            <span id="filteredCount">0</span> /
+            <span id="totalCount">0</span> results
+          </div>
+        </div>
+
+        <div class="results" id="results"></div>
+      </div>
+
+      <div class="main-content">
+        <div id="loading" class="loading hidden">
+          <div class="spinner"></div>
+          <div>Loading globe...</div>
+        </div>
+
+        <div class="controls">
+          <button
+            class="control-btn"
+            onclick="resetCamera()"
+            title="Reset View"
+          >
+            🏠
+          </button>
+          <button
+            class="control-btn"
+            onclick="toggleRotation()"
+            title="Toggle Rotation"
+          >
+            ⏯️
+          </button>
+          <button
+            class="control-btn"
+            onclick="toggleBorders()"
+            title="Toggle Country Borders"
+            id="bordersBtn"
+          >
+            🗺️
+          </button>
+        </div>
+
+        <div class="legend">
+          <div style="font-weight: 600; margin-bottom: 10px; font-size: 1em">
+            Legend
+          </div>
+          <div class="legend-item">
+            <div class="legend-color" style="background: #ff1744"></div>
+            <span>Single IP</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color" style="background: #ffa726"></div>
+            <span>Clustered IPs</span>
+          </div>
+          <div class="legend-item">
+            <div
+              class="legend-color"
+              style="background: rgba(0, 100, 200, 0.5); border: 1px solid #fff"
+            ></div>
+            <span>Country Borders</span>
+          </div>
+        </div>
+
+        <div id="globe"></div>
+      </div>
+    </div>
+
+    <script src="//unpkg.com/globe.gl"></script>
+    <script>
+      let globe;
+      let autoRotate = true;
+      let locationData = [];
+      let countriesData = [];
+      let currentAltitude = 2.5;
+
+      // Throttle mechanism for progressive updates
+      let updateScheduled = false;
+      let lastUpdateTime = 0;
+      const UPDATE_THROTTLE_MS = 300; // Update at most every 300ms
+
+      // IndexedDB setup for caching IP locations
+      let db;
+      const DB_NAME = "IPLocationCache";
+      const STORE_NAME = "locations";
+      const DB_VERSION = 1;
+
+      // Store all results for filtering
+      let allResults = [];
+
+      // Initialize IndexedDB
+      function initDB() {
+        return new Promise((resolve, reject) => {
+          const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+          request.onerror = () => reject(request.error);
+          request.onsuccess = () => {
+            db = request.result;
+            resolve(db);
+          };
+
+          request.onupgradeneeded = (event) => {
+            const db = event.target.result;
+            if (!db.objectStoreNames.contains(STORE_NAME)) {
+              const store = db.createObjectStore(STORE_NAME, { keyPath: "ip" });
+              store.createIndex("timestamp", "timestamp", { unique: false });
+            }
+          };
+        });
+      }
+
+      // Get cached location from IndexedDB
+      async function getCachedLocation(ip) {
+        if (!db) await initDB();
+
+        return new Promise((resolve, reject) => {
+          const transaction = db.transaction([STORE_NAME], "readonly");
+          const store = transaction.objectStore(STORE_NAME);
+          const request = store.get(ip);
+
+          request.onsuccess = () => {
+            const result = request.result;
+            if (result) {
+              // Check if cache is still valid (30 days)
+              const cacheAge = Date.now() - result.timestamp;
+              const maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days in milliseconds
+
+              if (cacheAge < maxAge) {
+                console.log(`Cache HIT for ${ip}`);
+                resolve(result.location);
+              } else {
+                console.log(`Cache EXPIRED for ${ip}`);
+                resolve(null);
+              }
+            } else {
+              console.log(`Cache MISS for ${ip}`);
+              resolve(null);
+            }
+          };
+
+          request.onerror = () => reject(request.error);
+        });
+      }
+
+      // Save location to IndexedDB cache
+      async function saveCachedLocation(ip, location) {
+        if (!db) await initDB();
+
+        return new Promise((resolve, reject) => {
+          const transaction = db.transaction([STORE_NAME], "readwrite");
+          const store = transaction.objectStore(STORE_NAME);
+          const data = {
+            ip: ip,
+            location: location,
+            timestamp: Date.now(),
+          };
+          const request = store.put(data);
+
+          request.onsuccess = () => resolve();
+          request.onerror = () => reject(request.error);
+        });
+      }
+
+      // Initialize Globe
+      async function initGlobe() {
+        const container = document.getElementById("globe");
+
+        // Load GeoJSON data for countries
+        try {
+          const countriesResponse = await fetch(
+            "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_admin_0_countries.geojson"
+          );
+          countriesData = await countriesResponse.json();
+        } catch (error) {
+          console.error("Failed to load countries data:", error);
+        }
+
+        globe = Globe()(container)
+          .globeImageUrl(
+            "//unpkg.com/three-globe/example/img/earth-blue-marble.jpg"
+          )
+          .bumpImageUrl(
+            "//unpkg.com/three-globe/example/img/earth-topology.png"
+          )
+          .backgroundImageUrl(
+            "//unpkg.com/three-globe/example/img/night-sky.png"
+          )
+
+          // Country polygons with borders
+          .polygonsData(countriesData.features || [])
+          .polygonCapColor(() => "rgba(0, 100, 200, 0.15)")
+          .polygonSideColor(() => "rgba(0, 100, 200, 0.05)")
+          .polygonStrokeColor(() => "#ffffff")
+          .polygonAltitude(0.001)
+          .polygonLabel(
+            ({ properties: d }) => `
+            <div style="background: rgba(0,0,0,0.9); padding: 12px; border-radius: 6px; color: white; max-width: 250px;">
+              <div style="font-weight: bold; color: #4FC3F7; font-size: 1.1em; margin-bottom: 8px;">
+                ${d.ADMIN || d.NAME}
+              </div>
+              ${
+                d.ISO_A2
+                  ? `<div style="opacity: 0.9; margin-bottom: 4px;">Code: ${d.ISO_A2}</div>`
+                  : ""
+              }
+              ${
+                d.POP_EST
+                  ? `<div style="opacity: 0.9; margin-bottom: 4px;">Population: ${(
+                      d.POP_EST / 1000000
+                    ).toFixed(1)}M</div>`
+                  : ""
+              }
+              ${
+                d.CONTINENT
+                  ? `<div style="opacity: 0.8; font-size: 0.9em;">Continent: ${d.CONTINENT}</div>`
+                  : ""
+              }
+            </div>
+          `
+          )
+
+          // No city labels - removed for performance
+
+          // IP location points - fixed size for performance
+          .pointsData([])
+          .pointAltitude(0.02)
+          .pointColor((d) => (d.count > 1 ? "#FFA726" : "#FF1744"))
+          .pointRadius((d) => {
+            // Fixed size, no zoom scaling for better performance
+            const baseRadius = d.count > 1 ? 0.6 : 0.5;
+            const clusterScale =
+              d.count > 1 ? Math.min(Math.log(d.count) * 0.2, 0.6) : 0;
+            return baseRadius + clusterScale;
+          })
+          .pointLabel((d) => {
+            if (d.count > 1) {
+              // Cluster tooltip
+              return `
+                <div style="background: rgba(0,0,0,0.9); padding: 12px; border-radius: 6px; color: white; max-width: 300px;">
+                  <div style="font-weight: bold; color: #FFA726; margin-bottom: 8px; font-size: 1.2em;">
+                    📍 ${d.count} IP Locations
+                  </div>
+                  <div style="margin-bottom: 8px;">🌍 ${d.city}, ${d.region}, ${
+                d.country
+              }</div>
+                  <div style="opacity: 0.9; font-size: 0.95em; margin-bottom: 6px;">IPs in this cluster:</div>
+                  <div style="opacity: 0.8; font-size: 0.85em; max-height: 150px; overflow-y: auto; padding: 8px; background: rgba(255,255,255,0.1); border-radius: 4px;">
+                    ${d.ips.map((ip) => `• ${ip}`).join("<br>")}
+                  </div>
+                  <div style="opacity: 0.7; font-size: 0.85em; margin-top: 8px;">📊 ${d.lat.toFixed(
+                    4
+                  )}, ${d.lng.toFixed(4)}</div>
+                </div>
+              `;
+            } else {
+              // Single IP tooltip
+              return `
+                <div style="background: rgba(0,0,0,0.9); padding: 12px; border-radius: 6px; color: white; max-width: 300px;">
+                  <div style="font-weight: bold; color: #FF1744; margin-bottom: 8px; font-size: 1.1em;">
+                    📍 ${d.ip}
+                  </div>
+                  <div style="margin-bottom: 4px;">🌍 ${d.city}, ${
+                d.region
+              }</div>
+                  <div style="margin-bottom: 4px;">🏳️ ${d.country} (${
+                d.countryCode
+              })</div>
+                  <div style="opacity: 0.8; font-size: 0.9em; margin-bottom: 4px;">📊 ${d.lat.toFixed(
+                    4
+                  )}, ${d.lng.toFixed(4)}</div>
+                  ${
+                    d.timezone
+                      ? `<div style="opacity: 0.8; font-size: 0.9em; margin-bottom: 4px;">🕐 ${d.timezone}</div>`
+                      : ""
+                  }
+                  ${
+                    d.org
+                      ? `<div style="opacity: 0.8; font-size: 0.9em; margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.2);">🏢 ${d.org}</div>`
+                      : ""
+                  }
+                  ${
+                    d.isp
+                      ? `<div style="opacity: 0.8; font-size: 0.9em;">📡 ${d.isp}</div>`
+                      : ""
+                  }
+                  ${
+                    d.as
+                      ? `<div style="opacity: 0.8; font-size: 0.9em;">🔢 ${d.as}</div>`
+                      : ""
+                  }
+                  <div style="opacity: 0.8; font-size: 0.9em; margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.2);">
+                    ${
+                      d.mobile
+                        ? "📱 Mobile/Cellular Connection"
+                        : "💻 Broadband/WiFi Connection"
+                    }
+                  </div>
+                </div>
+              `;
+            }
+          });
+
+        // No arcs - removed as they have no meaning
+
+        // Auto-rotate
+        globe.controls().autoRotate = true;
+        globe.controls().autoRotateSpeed = 0.5;
+
+        // Initial camera position
+        globe.pointOfView({ altitude: 2.5 });
+
+        // No dynamic scaling - removed for performance
+      }
+
+      // Cluster nearby locations
+      function clusterLocations(locations, distanceThreshold = 0.5) {
+        if (locations.length === 0) return [];
+
+        const clusters = [];
+        const used = new Set();
+
+        for (let i = 0; i < locations.length; i++) {
+          if (used.has(i)) continue;
+
+          const cluster = {
+            ...locations[i],
+            count: 1,
+            ips: [locations[i].ip],
+          };
+
+          for (let j = i + 1; j < locations.length; j++) {
+            if (used.has(j)) continue;
+
+            const distance = calculateDistance(
+              locations[i].lat,
+              locations[i].lng,
+              locations[j].lat,
+              locations[j].lng
+            );
+
+            if (distance < distanceThreshold) {
+              cluster.count++;
+              cluster.ips.push(locations[j].ip);
+              // Average the coordinates
+              cluster.lat =
+                (cluster.lat * (cluster.count - 1) + locations[j].lat) /
+                cluster.count;
+              cluster.lng =
+                (cluster.lng * (cluster.count - 1) + locations[j].lng) /
+                cluster.count;
+              used.add(j);
+            }
+          }
+
+          clusters.push(cluster);
+          used.add(i);
+        }
+
+        return clusters;
+      }
+
+      // Calculate distance between two lat/lng points (in degrees)
+      function calculateDistance(lat1, lng1, lat2, lng2) {
+        const dLat = lat2 - lat1;
+        const dLng = lng2 - lng1;
+        return Math.sqrt(dLat * dLat + dLng * dLng);
+      }
+
+      // Fetch IP location using ip-api.com (free, no key required)
+      async function getIPLocation(ip) {
+        try {
+          // Check cache first
+          const cached = await getCachedLocation(ip);
+          if (cached) {
+            return cached;
+          }
+
+          // Fetch from API
+          const response = await fetch(
+            `http://ip-api.com/json/${ip}?fields=status,message,country,countryCode,region,regionName,city,lat,lon,timezone,isp,org,as,mobile,query`
+          );
+          const data = await response.json();
+
+          if (data.status === "fail") {
+            return { error: data.message || "Location not found" };
+          }
+
+          const location = {
+            ip: data.query,
+            country: data.country,
+            countryCode: data.countryCode,
+            region: data.regionName,
+            city: data.city,
+            lat: data.lat,
+            lng: data.lon,
+            timezone: data.timezone,
+            isp: data.isp,
+            org: data.org,
+            as: data.as,
+            mobile: data.mobile,
+          };
+
+          // Save to cache
+          await saveCachedLocation(ip, location);
+
+          return location;
+        } catch (error) {
+          return { error: error.message };
+        }
+      }
+
+      // Locate multiple IPs
+      async function locateIPs() {
+        const ipListText = document.getElementById("ipList").value.trim();
+        if (!ipListText) {
+          showError("Please enter at least one IP address");
+          return;
+        }
+
+        const ipsList = ipListText
+          .split("\n")
+          .map((ip) => ip.trim())
+          .map((_) => {
+            // extract ip between <>
+            if (_.includes("<") && _.includes(">")) {
+              return _.match(/<\s*([^,\s>]+)/)?.[1];
+            }
+            return _;
+          })
+          .filter((ip) => ip && isValidIP(ip));
+
+        // unique IPs only
+        const ips = [...new Set(ipsList)];
+
+        // update textarea with cleaned IPs
+        document.getElementById("ipList").value = ips.join("\n");
+
+        if (ips.length === 0) {
+          showError("No valid IP addresses found");
+          return;
+        }
+
+        // Clear previous results
+        clearError();
+        document.getElementById("results").innerHTML = "";
+        document.getElementById("totalIPs").textContent = ips.length;
+        document.getElementById("foundIPs").textContent = "0";
+
+        const btn = document.getElementById("locateBtn");
+        btn.disabled = true;
+        btn.textContent = "🔍 Locating...";
+
+        locationData = [];
+        let foundCount = 0;
+        let apiCallCount = 0;
+
+        // Fetch locations with smart caching - only delay for API calls
+        for (let i = 0; i < ips.length; i++) {
+          const ip = ips[i];
+
+          // Check if cached (will be fast)
+          const isCached = await getCachedLocation(ip);
+          const needsDelay = !isCached && apiCallCount > 0;
+
+          // Add delay BEFORE API call if needed (ip-api.com: 45 requests/minute)
+          if (needsDelay) {
+            await new Promise((resolve) => setTimeout(resolve, 1500));
+          }
+
+          const location = await getIPLocation(ip);
+
+          // Track API calls for rate limiting
+          if (!isCached) {
+            apiCallCount++;
+          }
+
+          if (location.error) {
+            addResult(ip, null, location.error);
+          } else {
+            locationData.push(location);
+            addResult(ip, location);
+            foundCount++;
+            document.getElementById("foundIPs").textContent = foundCount;
+
+            // Progressive update: update globe after each IP (throttled)
+            scheduleGlobeUpdate(foundCount === 1); // Focus on first IP only
+          }
+        }
+
+        console.log(
+          `Processed ${ips.length} IPs: ${apiCallCount} API calls, ${
+            ips.length - apiCallCount
+          } from cache`
+        );
+
+        // Final update to ensure everything is shown
+        updateGlobe();
+
+        btn.disabled = false;
+        btn.textContent = "🔍 Locate IPs on Globe";
+      }
+
+      // Update globe visualization with clustering (throttled)
+      function updateGlobe(focusFirst = false) {
+        if (locationData.length === 0) return;
+
+        // Cluster nearby locations
+        const clusteredData = clusterLocations(locationData, 0.5);
+
+        // Update points with clusters
+        globe.pointsData(clusteredData);
+
+        // Focus on first location only if requested (first IP found)
+        if (focusFirst && clusteredData.length > 0) {
+          globe.pointOfView(
+            {
+              lat: clusteredData[0].lat,
+              lng: clusteredData[0].lng,
+              altitude: 2,
+            },
+            1500
+          );
+        }
+      }
+
+      // Throttled update - prevents too many rapid updates
+      function scheduleGlobeUpdate(focusFirst = false) {
+        const now = Date.now();
+        const timeSinceLastUpdate = now - lastUpdateTime;
+
+        if (timeSinceLastUpdate >= UPDATE_THROTTLE_MS) {
+          // Enough time has passed, update immediately
+          updateGlobe(focusFirst);
+          lastUpdateTime = now;
+          updateScheduled = false;
+        } else if (!updateScheduled) {
+          // Schedule an update for later
+          updateScheduled = true;
+          const delay = UPDATE_THROTTLE_MS - timeSinceLastUpdate;
+          setTimeout(() => {
+            updateGlobe(focusFirst);
+            lastUpdateTime = Date.now();
+            updateScheduled = false;
+          }, delay);
+        }
+        // If update already scheduled, do nothing (it will happen soon)
+      }
+
+      // Add result to sidebar
+      function addResult(ip, location, error) {
+        const resultsDiv = document.getElementById("results");
+        const resultItem = document.createElement("div");
+        resultItem.className = "result-item";
+
+        if (error) {
+          resultItem.innerHTML = `
+            <div class="ip">${ip}</div>
+            <div class="error">❌ ${error}</div>
+          `;
+          resultItem.dataset.error = "true";
+        } else {
+          // Store data in dataset for filtering
+          resultItem.dataset.ip = ip;
+          resultItem.dataset.country = location.country || "";
+          resultItem.dataset.city = location.city || "";
+          resultItem.dataset.region = location.region || "";
+          resultItem.dataset.isp = location.isp || "";
+          resultItem.dataset.org = location.org || "";
+          resultItem.dataset.timezone = location.timezone || "";
+          resultItem.dataset.mobile = location.mobile ? "mobile" : "broadband";
+          resultItem.dataset.as = location.as || "";
+          resultItem.dataset.lat = location.lat;
+          resultItem.dataset.lng = location.lng;
+
+          resultItem.innerHTML = `
+            <div class="ip">${ip}</div>
+            <div class="location">
+              📍 ${location.city}, ${location.region}, ${location.country} (${
+            location.countryCode
+          })<br>
+              🌐 ${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}<br>
+              ${location.timezone ? `🕐 ${location.timezone}<br>` : ""}
+              ${location.isp ? `📡 ${location.isp}<br>` : ""}
+              ${location.org ? `🏢 ${location.org}<br>` : ""}
+              ${location.as ? `🔢 ${location.as}<br>` : ""}
+              ${location.mobile ? "📱 Mobile/Cellular" : "💻 Broadband/WiFi"}
+            </div>
+          `;
+
+          // Add click event to zoom to location on globe
+          resultItem.addEventListener("click", () => {
+            zoomToLocation(location.lat, location.lng, ip);
+
+            // Close mobile menu if open
+            if (window.innerWidth <= 768) {
+              toggleMobileMenu();
+            }
+          });
+
+          // Store in allResults array
+          allResults.push({
+            element: resultItem,
+            data: location,
+          });
+        }
+
+        resultsDiv.appendChild(resultItem);
+
+        // Show filter section if we have results
+        if (allResults.length > 0) {
+          document.getElementById("searchFilterSection").style.display =
+            "block";
+          updateFilterOptions();
+          updateResultsCount();
+        }
+      }
+
+      // Clear all results
+      function clearResults() {
+        if (!confirm("Are you sure you want to clear all results?")) return;
+        document.getElementById("ipList").value = "";
+        document.getElementById("results").innerHTML = "";
+        document.getElementById("totalIPs").textContent = "0";
+        document.getElementById("foundIPs").textContent = "0";
+        document.getElementById("searchFilterSection").style.display = "none";
+        allResults = [];
+        locationData = [];
+        globe.pointsData([]);
+        globe.arcsData([]);
+        clearError();
+        clearFilters();
+      }
+
+      // Update filter dropdowns with unique values
+      function updateFilterOptions() {
+        const countries = new Set();
+        const cities = new Set();
+        const regions = new Set();
+        const isps = new Set();
+        const timezones = new Set();
+
+        allResults.forEach(({ data }) => {
+          if (data.country) countries.add(data.country);
+          if (data.city) cities.add(data.city);
+          if (data.region) regions.add(data.region);
+          if (data.isp) isps.add(data.isp);
+          if (data.timezone) timezones.add(data.timezone);
+        });
+
+        // Update country filter
+        const filterCountry = document.getElementById("filterCountry");
+        const currentCountry = filterCountry.value;
+        filterCountry.innerHTML = '<option value="">All Countries</option>';
+        [...countries].sort().forEach((country) => {
+          filterCountry.innerHTML += `<option value="${country}">${country}</option>`;
+        });
+        filterCountry.value = currentCountry;
+
+        // Update city filter
+        const filterCity = document.getElementById("filterCity");
+        const currentCity = filterCity.value;
+        filterCity.innerHTML = '<option value="">All Cities</option>';
+        [...cities].sort().forEach((city) => {
+          filterCity.innerHTML += `<option value="${city}">${city}</option>`;
+        });
+        filterCity.value = currentCity;
+
+        // Update region filter
+        const filterRegion = document.getElementById("filterRegion");
+        const currentRegion = filterRegion.value;
+        filterRegion.innerHTML = '<option value="">All Regions</option>';
+        [...regions].sort().forEach((region) => {
+          filterRegion.innerHTML += `<option value="${region}">${region}</option>`;
+        });
+        filterRegion.value = currentRegion;
+
+        // Update ISP filter
+        const filterISP = document.getElementById("filterISP");
+        const currentISP = filterISP.value;
+        filterISP.innerHTML = '<option value="">All ISPs</option>';
+        [...isps].sort().forEach((isp) => {
+          filterISP.innerHTML += `<option value="${isp}">${isp}</option>`;
+        });
+        filterISP.value = currentISP;
+
+        // Update timezone filter
+        const filterTimezone = document.getElementById("filterTimezone");
+        const currentTimezone = filterTimezone.value;
+        filterTimezone.innerHTML = '<option value="">All Timezones</option>';
+        [...timezones].sort().forEach((timezone) => {
+          filterTimezone.innerHTML += `<option value="${timezone}">${timezone}</option>`;
+        });
+        filterTimezone.value = currentTimezone;
+      }
+
+      // Apply filters to results
+      function applyFilters() {
+        const searchText = document
+          .getElementById("searchBox")
+          .value.toLowerCase();
+        const filterCountry = document.getElementById("filterCountry").value;
+        const filterCity = document.getElementById("filterCity").value;
+        const filterRegion = document.getElementById("filterRegion").value;
+        const filterISP = document.getElementById("filterISP").value;
+        const filterMobile = document.getElementById("filterMobile").value;
+        const filterTimezone = document.getElementById("filterTimezone").value;
+
+        let visibleCount = 0;
+
+        allResults.forEach(({ element }) => {
+          // Skip error items
+          if (element.dataset.error === "true") {
+            element.classList.remove("hidden");
+            visibleCount++;
+            return;
+          }
+
+          let isVisible = true;
+
+          // Apply search text filter (searches across all fields)
+          if (searchText) {
+            const searchableText = [
+              element.dataset.ip,
+              element.dataset.country,
+              element.dataset.city,
+              element.dataset.region,
+              element.dataset.isp,
+              element.dataset.org,
+              element.dataset.as,
+              element.dataset.timezone,
+            ]
+              .join(" ")
+              .toLowerCase();
+
+            if (!searchableText.includes(searchText)) {
+              isVisible = false;
+            }
+          }
+
+          // Apply dropdown filters
+          if (filterCountry && element.dataset.country !== filterCountry) {
+            isVisible = false;
+          }
+
+          if (filterCity && element.dataset.city !== filterCity) {
+            isVisible = false;
+          }
+
+          if (filterRegion && element.dataset.region !== filterRegion) {
+            isVisible = false;
+          }
+
+          if (filterISP && element.dataset.isp !== filterISP) {
+            isVisible = false;
+          }
+
+          if (filterMobile && element.dataset.mobile !== filterMobile) {
+            isVisible = false;
+          }
+
+          if (filterTimezone && element.dataset.timezone !== filterTimezone) {
+            isVisible = false;
+          }
+
+          // Show/hide element
+          if (isVisible) {
+            element.classList.remove("hidden");
+            visibleCount++;
+          } else {
+            element.classList.add("hidden");
+          }
+        });
+
+        // Update count
+        document.getElementById("filteredCount").textContent = visibleCount;
+      }
+
+      // Clear all filters
+      function clearFilters() {
+        document.getElementById("searchBox").value = "";
+        document.getElementById("filterCountry").value = "";
+        document.getElementById("filterCity").value = "";
+        document.getElementById("filterRegion").value = "";
+        document.getElementById("filterISP").value = "";
+        document.getElementById("filterMobile").value = "";
+        document.getElementById("filterTimezone").value = "";
+        applyFilters();
+      }
+
+      // Update results count display
+      function updateResultsCount() {
+        const total = allResults.length;
+        document.getElementById("totalCount").textContent = total;
+        document.getElementById("filteredCount").textContent = total;
+      }
+
+      // Show error message
+      function showError(message) {
+        const errorContainer = document.getElementById("errorContainer");
+        errorContainer.innerHTML = `<div class="error-message">⚠️ ${message}</div>`;
+      }
+
+      // Clear error message
+      function clearError() {
+        document.getElementById("errorContainer").innerHTML = "";
+      }
+
+      // Validate IP address
+      function isValidIP(ip) {
+        const ipv4Regex = /^(\d{1,3}\.){3}\d{1,3}$/;
+        const ipv6Regex = /^([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$/;
+        return ipv4Regex.test(ip) || ipv6Regex.test(ip);
+      }
+
+      // Reset camera view
+      function resetCamera() {
+        globe.pointOfView({ altitude: 2.5 }, 1000);
+      }
+
+      // Zoom to specific location on globe
+      function zoomToLocation(lat, lng, ip) {
+        console.log(`Zooming to ${ip} at ${lat}, ${lng}`);
+
+        // Remove active class from all result items
+        document.querySelectorAll(".result-item").forEach((item) => {
+          item.classList.remove("active");
+        });
+
+        // Add active class to the clicked item
+        const clickedItem = Array.from(
+          document.querySelectorAll(".result-item")
+        ).find((item) => item.dataset.ip === ip);
+        if (clickedItem) {
+          clickedItem.classList.add("active");
+        }
+
+        // Disable auto-rotation temporarily for better focus
+        const wasRotating = globe.controls().autoRotate;
+        globe.controls().autoRotate = false;
+
+        // Zoom to location with smooth animation
+        globe.pointOfView(
+          {
+            lat: lat,
+            lng: lng,
+            altitude: 1.5, // Closer zoom level
+          },
+          1500 // Animation duration in ms
+        );
+
+        // Re-enable auto-rotation after a delay if it was on
+        if (wasRotating) {
+          setTimeout(() => {
+            if (autoRotate) {
+              globe.controls().autoRotate = true;
+            }
+          }, 3000); // Wait 3 seconds before resuming rotation
+        }
+      }
+
+      // Toggle auto-rotation
+      function toggleRotation() {
+        autoRotate = !autoRotate;
+        globe.controls().autoRotate = autoRotate;
+      }
+
+      // Toggle country borders
+      let showBorders = true;
+      function toggleBorders() {
+        showBorders = !showBorders;
+        const btn = document.getElementById("bordersBtn");
+        btn.style.opacity = showBorders ? "1" : "0.5";
+        globe.polygonsData(showBorders ? countriesData.features || [] : []);
+      }
+
+      // Initialize on page load
+      window.addEventListener("load", async () => {
+        document.getElementById("loading").classList.remove("hidden");
+
+        // Initialize IndexedDB
+        try {
+          await initDB();
+          console.log("IndexedDB initialized");
+        } catch (error) {
+          console.error("Failed to initialize IndexedDB:", error);
+        }
+
+        setTimeout(async () => {
+          await initGlobe();
+          document.getElementById("loading").classList.add("hidden");
+        }, 500);
+      });
+
+      // Add sample IPs button functionality
+      window.addEventListener("keydown", (e) => {
+        if (e.ctrlKey && e.key === "s") {
+          e.preventDefault();
+          document.getElementById("ipList").value =
+            "8.8.8.8\n1.1.1.1\n208.67.222.222\n142.250.185.46\n13.107.42.14\n203.113.151.1\n210.245.24.20";
+        }
+      });
+
+      // Mobile menu toggle
+      function toggleMobileMenu() {
+        const sidebar = document.getElementById("sidebar");
+        const overlay = document.querySelector(".sidebar-overlay");
+        sidebar.classList.toggle("open");
+        overlay.classList.toggle("open");
+      }
+
+      // Handle window resize - update globe size
+      let resizeTimeout;
+      window.addEventListener("resize", () => {
+        // Debounce resize events to avoid too many updates
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => {
+          if (globe) {
+            // Globe.GL automatically handles resize, but we can force update
+            globe.width(globe.width());
+            globe.height(globe.height());
+
+            // Close mobile menu on resize to desktop
+            if (window.innerWidth > 768) {
+              const sidebar = document.getElementById("sidebar");
+              const overlay = document.querySelector(".sidebar-overlay");
+              sidebar.classList.remove("open");
+              overlay.classList.remove("open");
+            }
+          }
+        }, 250);
+      });
+
+      // Close mobile menu when clicking on locate button
+      const originalLocateIPs = window.locateIPs;
+      window.locateIPs = function () {
+        if (window.innerWidth <= 768) {
+          toggleMobileMenu();
+        }
+        return originalLocateIPs();
+      };
+    </script>
+  </body>
+</html>
