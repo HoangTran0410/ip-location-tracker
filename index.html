@@ -1033,7 +1033,11 @@
         return Math.sqrt(dLat * dLat + dLng * dLng);
       }
 
-      // Fetch IP location using ip-api.com (free, no key required)
+      // Fetch IP location using multiple free APIs with fallback
+      // APIs used (in order):
+      // 1. ipwho.is - Free, HTTPS, no rate limit mentioned
+      // 2. ip-api.com - Free, 45 requests/minute limit
+      // 3. ipapi.co - Free, 1000 requests/day
       async function getIPLocation(ip) {
         try {
           // Check cache first
@@ -1042,35 +1046,97 @@
             return cached;
           }
 
-          // Fetch from API
-          const response = await fetch(
-            `http://ip-api.com/json/${ip}?fields=status,message,country,countryCode,region,regionName,city,lat,lon,timezone,isp,org,as,mobile,query`
-          );
-          const data = await response.json();
+          // Try ipwho.is API first (HTTPS, free, no rate limit)
+          try {
+            const response = await fetch(`https://ipwho.is/${ip}`);
+            const data = await response.json();
 
-          if (data.status === "fail") {
-            return { error: data.message || "Location not found" };
+            if (data.success === true) {
+              const location = {
+                ip: data.ip,
+                country: data.country,
+                countryCode: data.country_code,
+                region: data.region,
+                city: data.city,
+                lat: data.latitude,
+                lng: data.longitude,
+                timezone: data.timezone?.id || "",
+                isp: data.connection?.isp || "",
+                org: data.connection?.org || "",
+                as: data.connection?.asn ? `AS${data.connection.asn}` : "",
+                mobile: false, // ipwho.is doesn't provide mobile info
+              };
+
+              // Save to cache
+              await saveCachedLocation(ip, location);
+              return location;
+            }
+          } catch (error) {
+            console.warn("ipwho.is API failed, trying fallback:", error);
           }
 
-          const location = {
-            ip: data.query,
-            country: data.country,
-            countryCode: data.countryCode,
-            region: data.regionName,
-            city: data.city,
-            lat: data.lat,
-            lng: data.lon,
-            timezone: data.timezone,
-            isp: data.isp,
-            org: data.org,
-            as: data.as,
-            mobile: data.mobile,
-          };
+          // Fallback to ip-api.com (HTTP only, but widely used)
+          try {
+            const response = await fetch(
+              `http://ip-api.com/json/${ip}?fields=status,message,country,countryCode,region,regionName,city,lat,lon,timezone,isp,org,as,mobile,query`
+            );
+            const data = await response.json();
 
-          // Save to cache
-          await saveCachedLocation(ip, location);
+            if (data.status === "success") {
+              const location = {
+                ip: data.query,
+                country: data.country,
+                countryCode: data.countryCode,
+                region: data.regionName,
+                city: data.city,
+                lat: data.lat,
+                lng: data.lon,
+                timezone: data.timezone,
+                isp: data.isp,
+                org: data.org,
+                as: data.as,
+                mobile: data.mobile,
+              };
 
-          return location;
+              // Save to cache
+              await saveCachedLocation(ip, location);
+              return location;
+            }
+          } catch (error) {
+            console.warn("ip-api.com API failed, trying next fallback:", error);
+          }
+
+          // Fallback to ipapi.co (HTTPS, 1000 requests/day)
+          try {
+            const response = await fetch(`https://ipapi.co/${ip}/json/`);
+            const data = await response.json();
+
+            if (!data.error) {
+              const location = {
+                ip: data.ip,
+                country: data.country_name,
+                countryCode: data.country_code,
+                region: data.region,
+                city: data.city,
+                lat: data.latitude,
+                lng: data.longitude,
+                timezone: data.timezone,
+                isp: data.org || "",
+                org: data.org || "",
+                as: data.asn || "",
+                mobile: false, // ipapi.co doesn't provide mobile info
+              };
+
+              // Save to cache
+              await saveCachedLocation(ip, location);
+              return location;
+            }
+          } catch (error) {
+            console.warn("ipapi.co API failed:", error);
+          }
+
+          // All APIs failed
+          return { error: "All API services failed. Please try again later." };
         } catch (error) {
           return { error: error.message };
         }

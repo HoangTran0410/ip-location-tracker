@@ -1,7 +1,5 @@
 # IP Location Tracker
 
-Using [ip-api.com](http://ip-api.com)
-
-> Need to run in *localhost*, Github Pages does not support fetch requests to http:// endpoints.
+Using [ip-api.com](http://ip-api.com) + [ipwho.is](https://ipwho.is/)
 
 ![Demo](./screenshots/1.png)
