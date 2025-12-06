@@ -384,9 +384,10 @@ async function fetchFromIpwho(ip) {
 // Fetch from ip-api.com API
 async function fetchFromIpApi(ip) {
   const response = await fetch(
-    `http://ip-api.com/json/${ip}?fields=status,message,country,countryCode,region,regionName,city,lat,lon,timezone,isp,org,as,mobile,query`
+    `https://cors.io/?u=http://ip-api.com/json/${ip}?fields=status,message,country,countryCode,region,regionName,city,lat,lon,timezone,isp,org,as,mobile,query`
   );
-  const data = await response.json();
+  const res = await response.json();
+  const data = JSON.parse(res?.body);
 
   if (data.status === "success") {
     return {
